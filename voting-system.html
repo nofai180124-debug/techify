@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Accessible Voting Information System</title>
+  <style>
+    :root{--accent:#2563eb;--accent-2:#22d3ee;--bg:#0f172a;--panel:#0b1220;--text:#e5e7eb;--muted:#94a3b8;--card:#0b1729;--border:#1e293b}
+    :root.light{--bg:#f7fafc;--panel:#ffffff;--text:#0f172a;--muted:#334155;--card:#ffffff;--border:#e2e8f0}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:0;background:radial-gradient(1200px 600px at 20% -10%, rgba(34,211,238,.15), transparent 60%), radial-gradient(1000px 600px at 120% 0%, rgba(37,99,235,.18), transparent 60%), var(--bg);color:var(--text)}
+    .light body, body.light{background:linear-gradient(180deg, rgba(2,6,23,.02), rgba(2,6,23,0)), var(--bg)}
+    /* Indian flag motif overlay */
+    body.flag::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:-2;opacity:.18;background:
+      linear-gradient(to bottom, #FF9933 0 18%, transparent 18% 38%, #138808 38% 56%, transparent 56% 100%);
+      background-repeat:no-repeat;background-size:100% 100%;background-position:0 0;background-attachment:fixed;}
+    body.flag::after{content:"";position:fixed;left:50%;top:clamp(60px, 12vh, 140px);transform:translateX(-50%);width:clamp(140px, 40vw, 260px);height:clamp(140px, 40vw, 260px);pointer-events:none;z-index:-1;opacity:.32;background:
+      radial-gradient(circle at 50% 50%, transparent 0 82px, rgba(10,93,211,.9) 82px 84px, transparent 84px 100%),
+      repeating-conic-gradient(from 0deg, rgba(10,93,211,.9) 0 2deg, transparent 2deg 15deg);
+      background-size:100% 100%, 100% 100%;background-position:center center;filter:saturate(1.2)}
+    .app{max-width:1100px;margin:24px auto;padding:16px;background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));border:1px solid var(--border);backdrop-filter: blur(6px);border-radius:16px;box-shadow:0 20px 60px rgba(2,6,23,.45);transition:box-shadow .3s ease}
+    .app:hover{box-shadow:0 24px 80px rgba(2,6,23,.6)}
+    header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:4px 2px}
+    header h1{margin:0;font-size:1.5rem;letter-spacing:.3px;background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .controls{display:flex;gap:8px;align-items:center}
+    button,select,input,textarea{font:inherit}
+    button{background:linear-gradient(180deg, var(--accent), #1d4ed8);color:#fff;border:none;padding:9px 12px;border-radius:10px;cursor:pointer;transition:transform .12s ease, box-shadow .2s ease}
+    button:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(37,99,235,.35)}
+    button.secondary{background:var(--panel);color:var(--text);border:1px solid var(--border)}
+    button.link{background:transparent;color:var(--accent);padding:0}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    button:focus-visible{outline:3px solid #22d3ee;outline-offset:2px}
+    main{display:grid;grid-template-columns:280px 1fr;gap:16px;margin-top:16px}
+    .sidebar{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--panel)}
+    .content{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--panel)}
+    .card{border:1px dashed rgba(148,163,184,.35);border-radius:12px;padding:12px;margin:10px 0;background:linear-gradient(180deg, rgba(2,6,23,.2), rgba(2,6,23,.05));transition:transform .15s ease, border-color .2s}
+    .card:hover{transform:translateY(-2px);border-color:#334155}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .largeText{font-size:18px}
+    .muted{color:var(--muted)}
+    label{display:block;margin:6px 0 2px}
+    input[type=text],input[type=password],textarea,select{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;background:#0b1729;color:#e5e7eb}
+    input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #22d3ee;outline-offset:2px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+    .stat{padding:12px;border-radius:12px;background:#071225;border:1px solid var(--border)}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#11316a;color:#dbeafe;font-size:.85em;border:1px solid #1d4ed8}
+    .danger{background:#3b0a0a;color:#fecaca;border-color:#7f1d1d}
+    .success{background:#052e1a;color:#bbf7d0;border-color:#065f46}
+    .notice{background:#3b2f0a;color:#fde68a;border-color:#a16207}
+    /* Light mode visibility tweaks */
+    .light .sidebar,.light .content{background:var(--panel);border-color:var(--border)}
+    .light .card{background:#ffffff;border-color:var(--border)}
+    .light input[type=text], .light input[type=password], .light textarea, .light select{background:#ffffff;color:#0f172a;border-color:#cbd5e1}
+    .light .muted{color:#475569}
+    .light .stat{background:#f8fafc;border-color:#e2e8f0}
+    .light .pill{background:#eef2ff;color:#1e3a8a;border-color:#c7d2fe}
+    .light .danger{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+    .light .success{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+    .light .notice{background:#fef9c3;color:#854d0e;border-color:#fde68a}
+    .hint{font-size:.9em;margin-top:6px;color:var(--muted)}
+    .ok{color:#22c55e}
+    .bad{color:#f87171}
+    .input-row{display:flex;gap:8px;align-items:center}
+    .input-row input{flex:1}
+    .fade{animation:fadeIn .35s ease both}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+    .float{animation:float 8s ease-in-out infinite}
+    @keyframes float{0%{transform:translateY(0)}50%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+    .glow{box-shadow:0 0 0 0 rgba(34,211,238,.5);animation:pulse 2.2s ease-in-out infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(34,211,238,.6)}70%{box-shadow:0 0 0 14px rgba(34,211,238,0)}100%{box-shadow:0 0 0 0 rgba(34,211,238,0)}}
+    canvas.confetti{position:fixed;inset:0;pointer-events:none;z-index:9999}
+    .hero{display:grid;grid-template-columns:1.2fr 1fr;gap:12px;align-items:center;margin:12px 0}
+    .heroText{padding:10px}
+    .imgGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .imgCard{position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#0b1729}
+    .imgCard img{display:block;width:100%;height:120px;object-fit:cover;filter:saturate(1.1) contrast(1.05)}
+    .imgCard small{position:absolute;left:8px;bottom:8px;background:rgba(2,6,23,.6);backdrop-filter:blur(3px);padding:2px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.15)}
+    @media (max-width:900px){ .hero{grid-template-columns:1fr} .imgGrid{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:600px){ .imgGrid{grid-template-columns:1fr} }
+    .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .legend .item{display:flex;align-items:center;gap:6px;font-size:.9em}
+    .legend .dot{width:10px;height:10px;border-radius:999px;display:inline-block;border:1px solid rgba(255,255,255,.3)}
+  </style>
+</head>
+<body>
+  <div class="app" id="app" aria-live="polite">
+    <header>
+      <h1 id="title">Accessible Voting Information System</h1>
+      <div class="controls">
+        <button id="toggleTheme" class="secondary" aria-pressed="false" aria-label="Toggle light and dark mode">Light</button>
+        <button id="toggleTTS" class="secondary" aria-pressed="false" aria-label="Toggle text to speech">TTS Off</button>
+        <button id="toggleLargeText" class="secondary" aria-pressed="false" aria-label="Toggle large text">Large text</button>
+        <a class="sr-only" href="#main">Skip to main content</a>
+      </div>
+    </header>
+
+    <main id="main">
+      <nav class="sidebar" aria-label="Primary">
+        <div class="card">
+          <div id="authBox" aria-live="polite"></div>
+        </div>
+        <div class="card">
+          <div id="statusBox" aria-live="polite"></div>
+        </div>
+      </nav>
+
+      <section class="content">
+        <div id="view" aria-live="polite" class="fade"></div>
+      </section>
+    </main>
+
+    <footer class="muted" style="margin-top:10px">
+      <span>Demo only. Data persists locally in your browser.</span>
+    </footer>
+  </div>
+
+  <script>
+    // Accessibility helpers
+    const a11y = {
+      ttsEnabled: false,
+      speak(text){
+        if(!this.ttsEnabled || !('speechSynthesis' in window)) return;
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(u);
+      }
+    }
+
+    const el = id => document.getElementById(id)
+    const app = el('app')
+    const view = el('view')
+    const authBox = el('authBox')
+    const statusBox = el('statusBox')
+    const toggleTTS = el('toggleTTS')
+    const toggleLargeText = el('toggleLargeText')
+    const THEME_KEY = 'theme-mode'
+
+    // Storage schema (localStorage)
+    // users: { id,email,passwordHash,role:'voter'|'admin', approved:boolean, resetCode?:string }
+    // elections: { id,title,window:{start,end}, candidates:[{id,name,party}], active:boolean }
+    // votes: { id,electionId,voterId,submittedAt }
+    // receipts: { id,voteId,code }
+    // session: { userId }
+
+    const DB = {
+      read(key, fallback){
+        try{ return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)) }catch{ return fallback }
+      },
+      write(key, value){ localStorage.setItem(key, JSON.stringify(value)) }
+    }
+
+    function uid(){ return 'id-' + Math.random().toString(36).slice(2) }
+    function nowIso(){ return new Date().toISOString() }
+
+    // Simple hash substitute for demo only
+    async function hash(text){
+      const enc = new TextEncoder().encode(text)
+      const buf = await crypto.subtle.digest('SHA-256', enc)
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('')
+    }
+
+    function seed(){
+      const seeded = DB.read('seeded', false)
+      if(seeded) return
+      const users = [
+        { id: 'admin-1', email:'admin@example.com', passwordHash:'', role:'admin', approved:true },
+      ]
+      const elections = [
+        { id:'el-1', title:'City Council Election', window:{ start:new Date(Date.now()-86400000).toISOString(), end:new Date(Date.now()+86400000*3).toISOString() }, active:true, candidates:[{id:'c1',name:'Alice Kumar',party:'Unity'},{id:'c2',name:'Brian Lee',party:'Forward'}] },
+      ]
+      DB.write('users', users)
+      DB.write('elections', elections)
+      DB.write('votes', [])
+      DB.write('receipts', [])
+      DB.write('session', null)
+      DB.write('seeded', true)
+      ;(async()=>{
+        const u = DB.read('users', [])
+        u[0].passwordHash = await hash('admin1234')
+        DB.write('users', u)
+      })()
+    }
+
+    function getSession(){ return DB.read('session', null) }
+    function setSession(s){ DB.write('session', s) }
+    function currentUser(){ const s=getSession(); if(!s) return null; return DB.read('users', []).find(u=>u.id===s.userId)||null }
+
+    function isElectionOpen(e){ const now = Date.now(); return new Date(e.window.start).getTime()<=now && now<=new Date(e.window.end).getTime() && e.active }
+
+    // Auth views
+    function renderAuthBox(){
+      const user = currentUser()
+      if(user){
+        authBox.innerHTML = `
+          <div aria-label="Account" role="region">
+            <div><strong>${user.email}</strong> <span class="pill">${user.role}</span> ${user.role==='voter' ? (user.approved?'<span class="pill success">Approved</span>':'<span class="pill notice">Pending approval</span>') : ''}</div>
+            <div class="row" style="margin-top:8px">
+              <button id="btnLogout" class="secondary">Logout</button>
+              ${user.role==='admin' ? '<button id="btnAdminPanel" class="secondary">Admin Panel</button>' : ''}
+              <button id="btnHome" class="secondary">Home</button>
+            </div>
+          </div>
+        `
+        el('btnLogout').onclick = ()=>{ setSession(null); a11y.speak('Logged out'); update() }
+        if(user.role==='admin') el('btnAdminPanel').onclick = ()=>renderAdminPanel()
+        el('btnHome').onclick = ()=>renderHome()
+      } else {
+        authBox.innerHTML = `
+          <div role="form" aria-label="Login or Register">
+            <div class="row">
+              <button id="showLogin" class="secondary">Login</button>
+              <button id="showRegister" class="secondary">Register</button>
+            </div>
+          </div>
+        `
+        el('showLogin').onclick = ()=>renderLogin()
+        el('showRegister').onclick = ()=>renderRegister()
+      }
+    }
+
+    function renderStatusBox(){
+      const users = DB.read('users', [])
+      const votes = DB.read('votes', [])
+      const elections = DB.read('elections', [])
+      const open = elections.filter(isElectionOpen)
+      statusBox.innerHTML = `
+        <div class="stat" role="status">
+          <div><strong>Open Elections:</strong> ${open.length}</div>
+          <div><strong>Total Registered:</strong> ${users.filter(u=>u.role==='voter').length}</div>
+          <div><strong>Votes Cast:</strong> ${votes.length}</div>
+        </div>
+      `
+    }
+
+    function renderHome(){
+      const elections = DB.read('elections', [])
+      const user = currentUser()
+      const open = elections.filter(isElectionOpen)
+      const upcoming = elections.filter(e=>new Date(e.window.start).getTime()>Date.now())
+      view.innerHTML = `
+        <div class="fade">
+          <div class="hero card fade" role="region" aria-label="Why voting matters">
+            <div class="heroText">
+              <h2 class="float" style="margin-top:0">Your Vote, Your Voice</h2>
+              <p class="muted">Elections empower citizens to choose their leaders and shape public policy. Participating ensures accountability, representation, and a healthier democracy.</p>
+              <ul style="margin:8px 0 0 18px">
+                <li>Have a say in decisions that affect you</li>
+                <li>Promote transparency and good governance</li>
+                <li>Strengthen community engagement and trust</li>
+              </ul>
+            </div>
+          </div>
+          <h2 tabindex="0" class="float">Elections</h2>
+          <div class="grid">
+            ${elections.map(e=>`
+              <div class="card fade" role="region" aria-label="Election ${e.title}">
+                <div><strong>${e.title}</strong> ${isElectionOpen(e)?'<span class="pill success">Open</span>':(new Date(e.window.start).getTime()>Date.now()?'<span class="pill notice">Upcoming</span>':'<span class="pill danger">Closed</span>')}</div>
+                <div class="muted">${new Date(e.window.start).toLocaleString()} - ${new Date(e.window.end).toLocaleString()}</div>
+                <div class="muted">Candidates: ${e.candidates.map(c=>c.name).join(', ')}</div>
+                ${user && user.role==='voter' && user.approved && isElectionOpen(e) ? `<button class="voteBtn glow" data-id="${e.id}">Vote</button>`:''}
+                <div class="card" style="margin-top:8px">
+                  <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center">
+                    <canvas width="160" height="160" data-chart="${e.id}"></canvas>
+                    <div>
+                      <div class="muted" style="margin-bottom:4px" data-label="${e.id}"></div>
+                      <div class="legend" data-legend="${e.id}"></div>
+                      <div class="muted" data-result="${e.id}"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+          ${!user?'<p class="muted">Login or register to vote.</p>':''}
+          <div class="card fade" role="region" aria-label="Rules to vote">
+            <h3 style="margin-top:0">Rules to Vote</h3>
+            <ul style="margin:0 0 8px 18px">
+              <li>Be a registered voter with a valid account.</li>
+              <li>Ensure your account is approved by an election officer.</li>
+              <li>Vote only within the official election window.</li>
+              <li>Each voter may submit one ballot per election.</li>
+              <li>Keep your confirmation code as proof of submission.</li>
+            </ul>
+            <p class="muted" style="margin:0">Your vote remains secret. Administrators cannot view vote choices.</p>
+          </div>
+        </div>
+      `
+      document.querySelectorAll('.voteBtn').forEach(b=> b.onclick = ()=>renderVote(b.dataset.id))
+      // Draw charts for each election
+      const elections2 = DB.read('elections', [])
+      const votes = DB.read('votes', [])
+      elections2.forEach(e=>{
+        const canvas = document.querySelector(`canvas[data-chart="${e.id}"]`)
+        const legend = document.querySelector(`.legend[data-legend="${e.id}"]`)
+        const resultEl = document.querySelector(`[data-result="${e.id}"]`)
+        const labelEl = document.querySelector(`[data-label="${e.id}"]`)
+        if(!canvas || !legend || !resultEl || !labelEl) return
+        const pastOnly = !isElectionOpen(e)
+        labelEl.textContent = pastOnly ? 'Final tally (closed election)' : 'Votes cast so far'
+        drawElectionPie(canvas, legend, resultEl, e, votes)
+      })
+      a11y.speak(`${open.length} open elections. ${upcoming.length} upcoming.`)
+    }
+
+    function renderLogin(){
+      view.innerHTML = `
+        <h2>Login</h2>
+        <form id="loginForm">
+          <label for="lemail">Email</label>
+          <input id="lemail" type="text" autocomplete="email" required />
+          <label for="lpass">Password</label>
+          <div class="input-row"><input id="lpass" type="password" autocomplete="current-password" required /><button type="button" id="toggleLoginPass" class="secondary" aria-label="Toggle password visibility">Show</button></div>
+          <div class="row" style="margin-top:8px">
+            <button type="submit">Login</button>
+            <button type="button" id="forgot" class="link">Forgot password?</button>
+          </div>
+        </form>
+      `
+      el('loginForm').onsubmit = async (e)=>{
+        e.preventDefault()
+        const email = el('lemail').value.trim().toLowerCase()
+        const pass = el('lpass').value
+        const users = DB.read('users', [])
+        const u = users.find(x=>x.email===email)
+        if(!u){ alert('No account'); return }
+        const ok = u.passwordHash===await hash(pass)
+        if(!ok){ alert('Invalid credentials'); return }
+        setSession({ userId: u.id })
+        a11y.speak('Logged in')
+        update()
+      }
+      el('forgot').onclick = ()=>renderForgot()
+      el('toggleLoginPass').onclick = ()=>{
+        const i = el('lpass'); const show = i.getAttribute('type')==='password'; i.setAttribute('type', show?'text':'password'); el('toggleLoginPass').textContent = show?'Hide':'Show'
+      }
+    }
+
+    function renderRegister(){
+      view.innerHTML = `
+        <h2 class="fade">Register</h2>
+        <form id="regForm">
+          <label for="remail">Email</label>
+          <input id="remail" type="text" autocomplete="email" required />
+          <label for="rpass">Password</label>
+          <div class="input-row"><input id="rpass" type="password" autocomplete="new-password" required /><button type="button" id="toggleRegPass" class="secondary" aria-label="Toggle password visibility">Show</button></div>
+          <div class="hint" id="regHint"></div>
+          <label for="rrole">Role</label>
+          <select id="rrole">
+            <option value="voter">Voter</option>
+            <option value="admin">Admin</option>
+          </select>
+          <div class="row" style="margin-top:8px">
+            <button type="submit" id="regSubmit" disabled>Create account</button>
+          </div>
+        </form>
+      `
+      function passOk(p){ return p.length>=8 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p) }
+      function renderHint(p){
+        const checks = [
+          { ok: p.length>=8, text:'At least 8 characters' },
+          { ok: /[A-Z]/.test(p), text:'Contains uppercase' },
+          { ok: /[a-z]/.test(p), text:'Contains lowercase' },
+          { ok: /\d/.test(p), text:'Contains number' },
+        ]
+        el('regHint').innerHTML = checks.map(c=>`<div class="${c.ok?'ok':'bad'}">${c.ok?'✓':'•'} ${c.text}</div>`).join('')
+      }
+      el('toggleRegPass').onclick = ()=>{ const i=el('rpass'); const show=i.type==='password'; i.type=show?'text':'password'; el('toggleRegPass').textContent = show?'Hide':'Show' }
+      el('rpass').addEventListener('input', ()=>{ const p = el('rpass').value; renderHint(p); el('regSubmit').disabled = !passOk(p) })
+      renderHint('')
+      el('regForm').onsubmit = async (e)=>{
+        e.preventDefault()
+        const email = el('remail').value.trim().toLowerCase()
+        const pass = el('rpass').value
+        const role = el('rrole').value
+        if(!passOk(pass)){ alert('Password does not meet requirements'); return }
+        const users = DB.read('users', [])
+        if(users.some(u=>u.email===email)){ alert('Email already exists'); return }
+        const user = { id: uid(), email, passwordHash: await hash(pass), role, approved: role==='admin' }
+        users.push(user)
+        DB.write('users', users)
+        setSession({ userId: user.id })
+        a11y.speak('Account created')
+        update()
+      }
+    }
+
+    function renderForgot(){
+      view.innerHTML = `
+        <h2 class="fade">Forgot Password</h2>
+        <form id="fForm">
+          <label for="femail">Email</label>
+          <input id="femail" type="text" autocomplete="email" required />
+          <div class="row" style="margin-top:8px">
+            <button type="submit">Send reset code</button>
+          </div>
+        </form>
+      `
+      el('fForm').onsubmit = (e)=>{
+        e.preventDefault()
+        const email = el('femail').value.trim().toLowerCase()
+        const users = DB.read('users', [])
+        const u = users.find(x=>x.email===email)
+        if(!u){ alert('No account'); return }
+        u.resetCode = Math.floor(100000+Math.random()*900000).toString()
+        DB.write('users', users)
+        alert('Reset code (simulated): '+u.resetCode)
+        renderReset(email)
+      }
+    }
+
+    function renderReset(email){
+      view.innerHTML = `
+        <h2 class="fade">Reset Password</h2>
+        <form id="rForm">
+          <div class="muted">For: ${email}</div>
+          <label for="rcode">Reset code</label>
+          <input id="rcode" type="text" required />
+          <label for="npass">New password</label>
+          <div class="input-row"><input id="npass" type="password" required /><button type="button" id="toggleNewPass" class="secondary" aria-label="Toggle password visibility">Show</button></div>
+          <div class="hint" id="resetHint"></div>
+          <div class="row" style="margin-top:8px">
+            <button type="submit" id="resetSubmit" disabled>Reset</button>
+          </div>
+        </form>
+      `
+      function passOk(p){ return p.length>=8 && /[a-z]/.test(p) && /[A-Z]/.test(p) && /\d/.test(p) }
+      function renderHint(p){
+        const checks = [
+          { ok: p.length>=8, text:'At least 8 characters' },
+          { ok: /[A-Z]/.test(p), text:'Contains uppercase' },
+          { ok: /[a-z]/.test(p), text:'Contains lowercase' },
+          { ok: /\d/.test(p), text:'Contains number' },
+        ]
+        el('resetHint').innerHTML = checks.map(c=>`<div class="${c.ok?'ok':'bad'}">${c.ok?'✓':'•'} ${c.text}</div>`).join('')
+      }
+      el('toggleNewPass').onclick = ()=>{ const i=el('npass'); const show=i.type==='password'; i.type=show?'text':'password'; el('toggleNewPass').textContent = show?'Hide':'Show' }
+      el('npass').addEventListener('input', ()=>{ const p = el('npass').value; renderHint(p); el('resetSubmit').disabled = !passOk(p) })
+      renderHint('')
+      el('rForm').onsubmit = async (e)=>{
+        e.preventDefault()
+        const code = el('rcode').value.trim()
+        const pass = el('npass').value
+        if(!passOk(pass)){ alert('Password does not meet requirements'); return }
+        const users = DB.read('users', [])
+        const u = users.find(x=>x.email===email)
+        if(!u || u.resetCode!==code){ alert('Invalid code'); return }
+        u.passwordHash = await hash(pass); delete u.resetCode
+        DB.write('users', users)
+        alert('Password updated')
+        renderLogin()
+      }
+    }
+
+    function renderVote(electionId){
+      const elections = DB.read('elections', [])
+      const e = elections.find(x=>x.id===electionId)
+      const user = currentUser()
+      if(!user || user.role!=='voter'){ alert('Login as voter'); return }
+      if(!user.approved){ alert('Your account is pending approval'); return }
+      if(!isElectionOpen(e)){ alert('Election not open'); return }
+      const votes = DB.read('votes', [])
+      const existing = votes.find(v=>v.electionId===e.id && v.voterId===user.id)
+      if(existing){ renderReceipt(existing.id); return }
+      view.innerHTML = `
+        <h2 class="fade">Vote: ${e.title}</h2>
+        <form id="voteForm">
+          ${e.candidates.map(c=>`<div><label><input type=radio name=candidate value="${c.id}"> ${c.name} <span class=muted>(${c.party})</span></label></div>`).join('')}
+          <div class="row" style="margin-top:8px"><button type="submit">Submit Vote</button></div>
+        </form>
+      `
+      el('voteForm').onsubmit = (ev)=>{
+        ev.preventDefault()
+        const chosen = [...document.querySelectorAll('input[name=candidate]')].find(i=>i.checked)
+        if(!chosen){ alert('Select a candidate'); return }
+        // Store vote without choice (privacy). In a real system, choice is recorded securely, not readable by admins.
+        const vote = { id: uid(), electionId: e.id, voterId: user.id, submittedAt: nowIso() }
+        const votes2 = DB.read('votes', [])
+        votes2.push(vote); DB.write('votes', votes2)
+        // Demo-only: save choice locally to enable aggregate chart (does not expose per-user publicly)
+        const key = user.id+'|'+e.id
+        const choices = JSON.parse(localStorage.getItem('demo-choices')||'{}')
+        choices[key] = chosen.value
+        localStorage.setItem('demo-choices', JSON.stringify(choices))
+        const receipts = DB.read('receipts', [])
+        const rec = { id: uid(), voteId: vote.id, code: Math.random().toString(36).slice(2,10).toUpperCase() }
+        receipts.push(rec); DB.write('receipts', receipts)
+        alert('Vote submitted. Confirmation code: '+rec.code)
+        renderReceipt(vote.id)
+      }
+    }
+
+    function renderReceipt(voteId){
+      const votes = DB.read('votes', [])
+      const vote = votes.find(v=>v.id===voteId)
+      const receipts = DB.read('receipts', [])
+      const rec = receipts.find(r=>r.voteId===voteId)
+      const elections = DB.read('elections', [])
+      const e = elections.find(x=>x.id===vote.electionId)
+      view.innerHTML = `
+        <h2 class="fade">Confirmation</h2>
+        <div class="card">
+          <div><strong>Election:</strong> ${e.title}</div>
+          <div><strong>Submitted:</strong> ${new Date(vote.submittedAt).toLocaleString()}</div>
+          <div><strong>Confirmation code:</strong> <span class="pill">${rec.code}</span></div>
+          <div class="muted">Keep this code as proof of submission. It does not reveal your choice.</div>
+        </div>
+        <div class="row">
+          <button id="home2" class="secondary">Back to elections</button>
+        </div>
+      `
+      el('home2').onclick = ()=>renderHome()
+      launchConfetti()
+    }
+
+    function renderVoterStatus(){
+      const user = currentUser(); if(!user){ alert('Login'); return }
+      const votes = DB.read('votes', [])
+      const elections = DB.read('elections', [])
+      const myVotes = votes.filter(v=>v.voterId===user.id)
+      view.innerHTML = `
+        <h2>My Voting Status</h2>
+        ${myVotes.length? myVotes.map(v=>{
+          const e = elections.find(x=>x.id===v.electionId)
+          const r = DB.read('receipts', []).find(r=>r.voteId===v.id)
+          return `<div class="card"><div><strong>${e.title}</strong></div><div>Submitted: ${new Date(v.submittedAt).toLocaleString()}</div><div>Code: <span class=pill>${r?.code||'-'}</span></div></div>`
+        }).join('') : '<p class="muted">No votes submitted yet.</p>'}
+      `
+    }
+
+    // Admin
+    function renderAdminPanel(){
+      const user = currentUser(); if(!user || user.role!=='admin'){ alert('Admin only'); return }
+      const users = DB.read('users', [])
+      const pending = users.filter(u=>u.role==='voter' && !u.approved)
+      const elections = DB.read('elections', [])
+      const votes = DB.read('votes', [])
+      view.innerHTML = `
+        <h2>Admin Panel</h2>
+        <div class="grid">
+          <div class="stat"><div><strong>Registered voters:</strong> ${users.filter(u=>u.role==='voter').length}</div><div><strong>Pending approvals:</strong> ${pending.length}</div><div><strong>Total votes:</strong> ${votes.length}</div></div>
+        </div>
+
+        <h3>Pending Approvals</h3>
+        ${pending.length? pending.map(u=>`<div class="card"><strong>${u.email}</strong><div class="row" style="margin-top:6px"><button data-id="${u.id}" class="approve">Approve</button><button data-id="${u.id}" class="reject secondary">Reject</button></div></div>`).join('') : '<p class="muted">None</p>'}
+
+        <h3 style="margin-top:12px">Elections</h3>
+        <div class="card">
+          <form id="elForm">
+            <div class="grid">
+              <div><label for="etitle">Title</label><input id="etitle" type="text" required></div>
+              <div><label for="estart">Start</label><input id="estart" type="datetime-local" required></div>
+              <div><label for="eend">End</label><input id="eend" type="datetime-local" required></div>
+            </div>
+            <div class="card" id="cands">
+              <div class="row"><input type="text" placeholder="Candidate name" class="candName"><input type="text" placeholder="Party" class="candParty"><button type="button" id="addCand" class="secondary">Add candidate</button></div>
+              <div id="candList" class="muted">No candidates yet.</div>
+            </div>
+            <div class="row"><button type="submit">Create Election</button></div>
+          </form>
+        </div>
+
+        <div class="grid">
+          ${elections.map(e=>`
+            <div class="card" data-elcard="${e.id}">
+              <div><strong>${e.title}</strong> ${e.active?'<span class=pill success>Active</span>':'<span class=pill danger>Inactive</span>'}</div>
+              <div class=muted>${new Date(e.window.start).toLocaleString()} - ${new Date(e.window.end).toLocaleString()}</div>
+              <div class=muted>Candidates: ${e.candidates.map(c=>c.name).join(', ')||'-'}</div>
+              <div class=row style=margin-top:6px>
+                <button class="toggle" data-id="${e.id}">${e.active?'Deactivate':'Activate'}</button>
+                <button class="del secondary" data-id="${e.id}">Delete</button>
+              </div>
+              <div class="card" style="margin-top:8px">
+                <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
+                  <div>
+                    <label for="estart-${e.id}">Start</label>
+                    <input id="estart-${e.id}" type="datetime-local" value="${new Date(e.window.start).toISOString().slice(0,16)}">
+                  </div>
+                  <div>
+                    <label for="eend-${e.id}">End</label>
+                    <input id="eend-${e.id}" type="datetime-local" value="${new Date(e.window.end).toISOString().slice(0,16)}">
+                  </div>
+                </div>
+                <div class="row" style="margin-top:6px">
+                  <button class="saveDates" data-id="${e.id}">Save dates</button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `
+      document.querySelectorAll('.approve').forEach(b=> b.onclick = ()=>{
+        const users = DB.read('users', [])
+        const u = users.find(x=>x.id===b.dataset.id); if(!u) return
+        u.approved = true; DB.write('users', users); update(); alert('Approved')
+      })
+      document.querySelectorAll('.reject').forEach(b=> b.onclick = ()=>{
+        let users = DB.read('users', [])
+        users = users.filter(x=>x.id!==b.dataset.id); DB.write('users', users); update(); alert('Rejected and removed')
+      })
+      document.querySelectorAll('.toggle').forEach(b=> b.onclick = ()=>{
+        const elections = DB.read('elections', [])
+        const e = elections.find(x=>x.id===b.dataset.id); if(!e) return
+        e.active = !e.active; DB.write('elections', elections); renderAdminPanel()
+      })
+      document.querySelectorAll('.del').forEach(b=> b.onclick = ()=>{
+        let elections = DB.read('elections', [])
+        elections = elections.filter(x=>x.id!==b.dataset.id); DB.write('elections', elections); renderAdminPanel()
+      })
+      document.querySelectorAll('.saveDates').forEach(btn=> btn.onclick = ()=>{
+        const id = btn.dataset.id
+        const elections = DB.read('elections', [])
+        const e = elections.find(x=>x.id===id); if(!e) return
+        const card = document.querySelector(`.card[data-elcard="${id}"]`)
+        const startEl = card.querySelector(`#estart-${id}`)
+        const endEl = card.querySelector(`#eend-${id}`)
+        const ns = startEl.value
+        const ne = endEl.value
+        if(!ns || !ne){ alert('Please provide both start and end'); return }
+        const sMs = new Date(ns).getTime(); const eMs = new Date(ne).getTime()
+        if(isNaN(sMs)||isNaN(eMs)|| sMs>=eMs){ alert('Invalid dates: start must be before end'); return }
+        e.window.start = new Date(ns).toISOString()
+        e.window.end = new Date(ne).toISOString()
+        DB.write('elections', elections)
+        alert('Election dates updated')
+        renderAdminPanel()
+      })
+
+      const cand = []
+      const candList = el('candList')
+      function refreshCand(){ candList.textContent = cand.length? cand.map(c=>c.name+' ('+c.party+')').join(', '):'No candidates yet.' }
+      refreshCand()
+      el('addCand').onclick = ()=>{
+        const name = document.querySelector('.candName').value.trim()
+        const party = document.querySelector('.candParty').value.trim()
+        if(!name) return
+        cand.push({ id: uid(), name, party })
+        document.querySelector('.candName').value=''; document.querySelector('.candParty').value=''
+        refreshCand()
+      }
+      el('elForm').onsubmit = (e)=>{
+        e.preventDefault()
+        const title = el('etitle').value.trim()
+        const start = el('estart').value
+        const end = el('eend').value
+        if(!title||!start||!end||cand.length<1){ alert('Fill all fields and add at least one candidate'); return }
+        const elections = DB.read('elections', [])
+        elections.push({ id: uid(), title, window:{ start:new Date(start).toISOString(), end:new Date(end).toISOString() }, candidates:[...cand], active:true })
+        DB.write('elections', elections)
+        alert('Election created')
+        renderAdminPanel()
+      }
+    }
+
+    // Controls
+    toggleTTS.onclick = ()=>{
+      a11y.ttsEnabled = !a11y.ttsEnabled
+      toggleTTS.textContent = a11y.ttsEnabled? 'TTS On':'TTS Off'
+      toggleTTS.setAttribute('aria-pressed', String(a11y.ttsEnabled))
+      a11y.speak('Text to speech '+ (a11y.ttsEnabled?'enabled':'disabled'))
+    }
+    toggleLargeText.onclick = ()=>{
+      const on = app.classList.toggle('largeText')
+      toggleLargeText.setAttribute('aria-pressed', String(on))
+    }
+
+    // Theme toggle (dark/light)
+    function applyTheme(mode){
+      // mode: 'dark' | 'light'
+      document.documentElement.classList.toggle('light', mode==='light')
+      document.body.classList.toggle('light', mode==='light')
+      el('toggleTheme').textContent = mode==='light' ? 'Dark' : 'Light'
+      el('toggleTheme').setAttribute('aria-pressed', String(mode==='light'))
+      localStorage.setItem(THEME_KEY, mode)
+    }
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'dark'
+    applyTheme(savedTheme)
+    el('toggleTheme').onclick = ()=>{
+      const curr = localStorage.getItem(THEME_KEY) || 'dark'
+      applyTheme(curr==='dark' ? 'light':'dark')
+    }
+
+    // Flag/Constitution overlay always on
+    document.body.classList.add('flag')
+
+    // Router-ish shortcuts
+    function update(){ renderAuthBox(); renderStatusBox(); renderHome() }
+
+    // Quick actions area under status
+    function enhanceStatusBox(){
+      const user = currentUser()
+      const div = document.createElement('div')
+      div.className='card'
+      if(user && user.role==='voter'){
+        div.innerHTML = `<div class=row><button id=voterStatus class=secondary>My voting status</button></div>`
+        statusBox.appendChild(div)
+        el('voterStatus').onclick = ()=>renderVoterStatus()
+      }
+    }
+
+    // Init
+    seed()
+    update()
+    enhanceStatusBox()
+
+    // Simple confetti
+    function pickColors(n){
+      const base = ['#60a5fa','#34d399','#f59e0b','#ef4444','#a78bfa','#22d3ee','#fb7185','#84cc16']
+      const arr = []
+      for(let i=0;i<n;i++) arr.push(base[i%base.length])
+      return arr
+    }
+    function drawElectionPie(canvas, legendEl, resultEl, election, votes){
+      const ctx = canvas.getContext('2d')
+      // Count strictly from demo-choices (local aggregate of selections)
+      const saved = JSON.parse(localStorage.getItem('demo-choices')||'{}')
+      const counts = Array(election.candidates.length).fill(0)
+      votes.filter(v=>v.electionId===election.id).forEach(v=>{
+        const key = v.voterId+'|'+v.electionId
+        const choice = saved[key]
+        if(choice){
+          const idx = election.candidates.findIndex(c=>c.id===choice)
+          if(idx>-1) counts[idx]++
+        }
+      })
+      const total = counts.reduce((a,b)=>a+b,0)
+      const colors = pickColors(counts.length)
+      // Draw
+      ctx.clearRect(0,0,canvas.width,canvas.height)
+      const cx = canvas.width/2, cy = canvas.height/2, r = Math.min(cx,cy)-6
+      if(total === 0){
+        // Show neutral ring when no votes/choices recorded yet
+        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.strokeStyle = 'rgba(148,163,184,.35)'; ctx.lineWidth = 12; ctx.stroke()
+      } else {
+        let start = -Math.PI/2
+        counts.forEach((cnt,i)=>{
+          const frac = cnt/total
+          const end = start + frac*2*Math.PI
+          ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,start,end); ctx.closePath(); ctx.fillStyle = colors[i]; ctx.fill()
+          start = end
+        })
+      }
+      // Legend
+      legendEl.innerHTML = election.candidates.map((c,i)=>{
+        const pct = total>0 ? Math.round(counts[i]/total*100) : 0
+        return `<span class="item"><span class="dot" style="background:${colors[i]}"></span>${c.name}: ${counts[i]} (${pct}%)</span>`
+      }).join('')
+    }
+    function launchConfetti(){
+      const canvas = document.createElement('canvas')
+      canvas.className='confetti'
+      document.body.appendChild(canvas)
+      const ctx = canvas.getContext('2d')
+      let W,H; const DPR = Math.min(2, window.devicePixelRatio || 1)
+      function resize(){ W = canvas.width = innerWidth * DPR; H = canvas.height = innerHeight * DPR; canvas.style.width = innerWidth+'px'; canvas.style.height = innerHeight+'px' }
+      resize(); window.addEventListener('resize', resize, { once:true })
+      const colors = ['#22d3ee','#38bdf8','#60a5fa','#a78bfa','#f472b6','#f97316']
+      const pieces = Array.from({length:120},()=>({
+        x: Math.random()*W,
+        y: -Math.random()*H*0.2,
+        r: 4 + Math.random()*6,
+        c: colors[Math.floor(Math.random()*colors.length)],
+        vx: -1+Math.random()*2,
+        vy: 2+Math.random()*3,
+        rot: Math.random()*Math.PI,
+        vr: -0.1+Math.random()*0.2
+      }))
+      let t0 = performance.now()
+      function tick(t){
+        const dt = Math.min(32, t - t0); t0 = t
+        ctx.clearRect(0,0,W,H)
+        pieces.forEach(p=>{
+          p.x += p.vx * DPR; p.y += p.vy * DPR; p.rot += p.vr
+          if(p.y>H+20) { p.y = -10; p.x = Math.random()*W }
+          ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot)
+          ctx.fillStyle = p.c; ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r)
+          ctx.restore()
+        })
+        raf = requestAnimationFrame(tick)
+      }
+      let raf = requestAnimationFrame(tick)
+      setTimeout(()=>{ cancelAnimationFrame(raf); canvas.remove() }, 2500)
+    }
+  </script>
+</body>
+</html>
+
+
